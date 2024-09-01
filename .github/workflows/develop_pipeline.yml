@@ -35,13 +35,13 @@ jobs:
       run: |
         if [ ! -f "$HOME/.poetry/bin/poetry" ]; then
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "export PATH=$HOME/.poetry/bin:$PATH" >> $GITHUB_ENV
         fi
+        echo "POETRY_BIN=$HOME/.poetry/bin/poetry" >> $GITHUB_ENV
+        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     
     - name: Install dependencies
       if: steps.poetry-cache.outputs.cache-hit != 'true'
-      run: |
-        poetry install --no-interaction --no-root
+      run: poetry install --no-interaction --no-root
 
   lint:
     needs: setup
@@ -53,9 +53,9 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    
-    - name: Run linter
-      run: poetry run flake8 .
+
+    - name: Use Poetry to run linter
+      run: ${{ env.POETRY_BIN }} run flake8 .
 
   test:
     needs: setup
@@ -68,8 +68,8 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Run tests
-      run: poetry run pytest .
+    - name: Use Poetry to run tests
+      run: ${{ env.POETRY_BIN }} run pytest .
 
   deploy:
     runs-on: ubuntu-latest
