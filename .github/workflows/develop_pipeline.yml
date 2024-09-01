@@ -69,7 +69,7 @@ jobs:
           virtualenvs-in-project: true
 
       - name: Listar arquivos no cache
-        run: ls -la ~/.cache/pypoetry
+        run: ls -la ~/.cache/pypoetry/cache
 
       - name: Verificar versão do Poetry
         run: poetry --version
