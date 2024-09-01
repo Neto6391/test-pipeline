@@ -11,6 +11,9 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    outputs:
+      poetry-cache-hit: ${{ steps.cache-poetry.outputs.cache-hit }}
+      venv-cache-hit: ${{ steps.cache-venv.outputs.cache-hit }}
     steps:
     - uses: actions/checkout@v4
     
@@ -22,30 +25,35 @@ jobs:
     - name: Install Poetry
       run: |
         curl -sSL https://install.python-poetry.org | python3 -
-        echo "POETRY_BIN=$HOME/.poetry/bin/poetry" >> $GITHUB_ENV
         echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     
-    - name: Cache dependencies
+    - name: Cache Poetry
+      id: cache-poetry
       uses: actions/cache@v4
       with:
         path: |
-          .venv
           ~/.cache/pypoetry
+          ~/.poetry
         key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-    
-    - name: Install dependencies
-      run: poetry install --no-interaction --no-root
 
-    - name: Save environment for later jobs
-      run: |
-        tar -czf env.tar.gz .venv
-      continue-on-error: true
-      id: save_env
-      if: success()
-    - uses: actions/upload-artifact@v3
+    - name: Cache venv
+      id: cache-venv
+      uses: actions/cache@v4
       with:
-        name: python-env
-        path: env.tar.gz
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+
+    - name: Install dependencies
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+      run: |
+        $HOME/.poetry/bin/poetry install --no-interaction --no-root
+
+    - name: Upload venv for reuse
+      if: steps.cache-venv.outputs.cache-hit != 'true'
+      uses: actions/upload-artifact@v3
+      with:
+        name: python-venv
+        path: .venv
 
   lint:
     runs-on: ubuntu-latest
@@ -53,12 +61,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Download and extract environment
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Download venv
+      if: needs.setup.outputs.venv-cache-hit != 'true'
       uses: actions/download-artifact@v3
       with:
-        name: python-env
+        name: python-venv
     - run: |
-        tar -xzf env.tar.gz
+        echo ".venv" >> $GITHUB_PATH
     
     - name: Run linter
       run: .venv/bin/flake8 .
@@ -69,12 +83,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Download and extract environment
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Download venv
+      if: needs.setup.outputs.venv-cache-hit != 'true'
       uses: actions/download-artifact@v3
       with:
-        name: python-env
+        name: python-venv
     - run: |
-        tar -xzf env.tar.gz
+        echo ".venv" >> $GITHUB_PATH
     
     - name: Run tests
       run: .venv/bin/pytest .
