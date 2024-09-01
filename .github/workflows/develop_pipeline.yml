@@ -70,7 +70,7 @@ jobs:
 
       - name: Install Poetry if has cached
         if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
-        run: poetry install
+        run: source ~/.poetry/env
       
       - name: Run linter
         run: poetry run flake8 .
