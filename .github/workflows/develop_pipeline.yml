@@ -68,11 +68,13 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
 
+      - name: Listar arquivos no cache
+        run: ls -la ~/.cache/pypoetry
+
       - name: Verificar versão do Poetry
         run: poetry --version
         
-      - name: Listar arquivos no cache
-        run: ls -la ~/.cache/pypoetry
+      
       - name: Install Poetry if has cached
         if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
         run: source ~/.poetry/env
