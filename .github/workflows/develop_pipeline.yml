@@ -12,16 +12,18 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: ./.github/workflows/setup-python-env.yml
+    - name: reuse setup steps
+      uses: ./.github/workflows/setup-python-env.yml
       with:
-          python-version: '3.10'
+        python-version: '3.10'
     - name: Run linter
       run: ${{ env.POETRY_BIN }} run flake8 .
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: ./.github/workflows/setup-python-env.yml
+      - name: reuse setup steps
+        uses: ./.github/workflows/setup-python-env.yml
         with:
           python-version: '3.10'
       - name: Run tests
