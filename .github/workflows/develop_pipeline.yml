@@ -67,6 +67,10 @@ jobs:
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
+
+      - name: Install Poetry if has cached
+        if: steps.cached-poetry-dependencies.outputs.cache-hit == true
+        run: poetry install
       
       - name: Run linter
         run: poetry run flake8 .
@@ -98,7 +102,7 @@ jobs:
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
-      
+
       - name: Run tests
         run: poetry run pytest .
 
