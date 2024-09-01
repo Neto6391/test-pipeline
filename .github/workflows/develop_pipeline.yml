@@ -13,54 +13,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
     - uses: actions/setup-python@v5
       with:
         python-version: '3.10'
     
-    - name: cache poetry install
+    - name: Cache Poetry
       uses: actions/cache@v4
       with:
-          path: ~/.local
-          key: ${{ runner.os }}-poetry
-          restore-keys: ${{ runner.os }}-poetry
-    - run: pipx install poetry
-
-    - name: cache deps
+        path: ~/.local
+        key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-poetry-
+    
+    - name: Install Poetry
+      run: pipx install poetry
+    
+    - name: Cache dependencies
       id: cache-deps
       uses: actions/cache@v4
       with:
-          path: .venv
-          key: pydeps-${{ hashFiles('**/poetry.lock') }}
-
-    - run: poetry install --no-interaction --no-root
+        path: .venv
+        key: pydeps-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
       if: steps.cache-deps.outputs.cache-hit != 'true'
-    - run: poetry install --no-interaction
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
 
   lint:
     runs-on: ubuntu-latest
     needs: setup
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      
+      - name: Cache Poetry and venv
+        uses: actions/cache@v4
         with:
-            path: ~/.local
-            key: ${{ runner.os }}-poetry
-            restore-keys: ${{ runner.os }}-poetry
+          path: |
+            ~/.local
+            .venv
+          key: ${{ runner.os }}-poetry-and-venv-${{ hashFiles('**/poetry.lock') }}
+      
       - name: Run linter
-        run: poetry run flake8 .
+        run: |
+          poetry run flake8 .
 
   test:
     runs-on: ubuntu-latest
     needs: setup
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      
+      - name: Cache Poetry and venv
+        uses: actions/cache@v4
         with:
-            path: ~/.local
-            key: ${{ runner.os }}-poetry
-            restore-keys: ${{ runner.os }}-poetry
+          path: |
+            ~/.local
+            .venv
+          key: ${{ runner.os }}-poetry-and-venv-${{ hashFiles('**/poetry.lock') }}
+      
       - name: Run tests
-        run: poetry run pytest .
+        run: |
+          poetry run pytest .
 
   deploy:
     runs-on: ubuntu-latest
