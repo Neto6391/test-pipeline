@@ -41,7 +41,7 @@ jobs:
     
     - name: Install dependencies
       if: steps.poetry-cache.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
+      run: $HOME/.poetry/bin/poetry install --no-interaction --no-root
 
   lint:
     needs: setup
@@ -54,8 +54,8 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Use Poetry to run linter
-      run: ${{ env.POETRY_BIN }} run flake8 .
+    - name: Run linter
+      run: ${{ env.POETRY_BIN }} flake8 .
 
   test:
     needs: setup
@@ -68,8 +68,8 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Use Poetry to run tests
-      run: ${{ env.POETRY_BIN }} run pytest .
+    - name: Run tests
+      run: ${{ env.POETRY_BIN }} pytest .
 
   deploy:
     runs-on: ubuntu-latest
