@@ -13,46 +13,68 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
     - name: Set up Python and Poetry
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    - uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    - name: Cache Poetry and venv
+        cache: 'poetry'
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Load cached venv
+      id: cached-poetry-dependencies
       uses: actions/cache@v4
       with:
-        path: |
-          ~/.cache/pypoetry
-          ~/.poetry
-          .venv
-        key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
-        restore-keys: |
-          poetry-${{ runner.os }}-
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Install dependencies
+      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+      run: poetry install --no-interaction --no-root
+    
+    - name: Install project
+      run: poetry install --no-interaction
 
-  lint:
-    runs-on: ubuntu-latest
+  lint-test:
     needs: setup
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    
+    - name: Set up Python and Poetry
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+        cache: 'poetry'
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Load cached venv
+      uses: actions/cache@v4
+      with:
+        path: .venv
+        key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+    
     - name: Run linter
       run: poetry run flake8 .
-
-  test:
-    runs-on: ubuntu-latest
-    needs: setup
-    steps:
-    - uses: actions/checkout@v4
+    
     - name: Run tests
       run: poetry run pytest .
 
   deploy:
+    needs: lint-test
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
     steps:
+    - uses: actions/checkout@v4
+    
     - name: Deploy
-      if: success()
       run: |
         echo "Deploying the application..."
