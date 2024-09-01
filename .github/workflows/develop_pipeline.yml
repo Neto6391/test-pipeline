@@ -64,7 +64,7 @@ jobs:
       - name: Download venv
         uses: actions/download-artifact@v3
         with:
-            name: venv
+            name: python-venv
             path: .venv
         
       - name: Run linter
