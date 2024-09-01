@@ -8,9 +8,6 @@ on:
     branches:
       - develop
 
-env:
-  PYTHON_VERSION: '3.10'
-
 jobs:
   setup:
     runs-on: ubuntu-latest
@@ -20,87 +17,72 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
+        python-version: '3.10'
     
     - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 1.5.1
-        virtualenvs-create: true
-        virtualenvs-in-project: true
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "POETRY_BIN=$HOME/.poetry/bin/poetry" >> $GITHUB_ENV
+        echo "$HOME/.poetry/bin" >> $GITHUB_PATH
     
     - name: Cache dependencies
-      id: cache-deps
       uses: actions/cache@v4
       with:
-        path: .venv
-        key: venv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        path: |
+          .venv
+          ~/.cache/pypoetry
+        key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
     
     - name: Install dependencies
-      if: steps.cache-deps.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
-    
-    - name: Install project
-      run: poetry install --no-interaction
+
+    - name: Save environment for later jobs
+      run: |
+        tar -czf env.tar.gz .venv
+      continue-on-error: true
+      id: save_env
+      if: success()
+    - uses: actions/upload-artifact@v3
+      with:
+        name: python-env
+        path: env.tar.gz
 
   lint:
-    needs: setup
     runs-on: ubuntu-latest
+    needs: setup
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Download and extract environment
+      uses: actions/download-artifact@v3
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    # - name: Install Poetry
-    #   uses: snok/install-poetry@v1
-    #   with:
-    #     version: 1.5.1
-    #     virtualenvs-create: true
-    #     virtualenvs-in-project: true
-    
-    - name: Restore dependencies
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        name: python-env
+    - run: |
+        tar -xzf env.tar.gz
     
     - name: Run linter
-      run: poetry run flake8 .
+      run: .venv/bin/flake8 .
 
   test:
-    needs: setup
     runs-on: ubuntu-latest
+    needs: setup
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
+    - name: Download and extract environment
+      uses: actions/download-artifact@v3
       with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        version: 1.5.1
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-    
-    - name: Restore dependencies
-      uses: actions/cache@v4
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-py${{ env.PYTHON_VERSION }}-${{ hashFiles('**/poetry.lock') }}
+        name: python-env
+    - run: |
+        tar -xzf env.tar.gz
     
     - name: Run tests
-      run: poetry run pytest .
+      run: .venv/bin/pytest .
 
   deploy:
-    needs: [lint, test]
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    needs: [lint, test]
     steps:
     - name: Deploy
+      if: success()
       run: echo "Deploying the application..."
