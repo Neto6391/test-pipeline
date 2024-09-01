@@ -62,22 +62,12 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
       
       - name: Install Poetry
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
           virtualenvs-in-project: true
-
-      - name: Listar arquivos no cache
-        run: ls -la ~/.cache/pypoetry/cache
-
-      - name: Verificar versão do Poetry
-        run: poetry --version
         
-      
-      - name: Install Poetry if has cached
-        if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
-        run: source ~/.poetry/env
+    
       
       - name: Run linter
         run: poetry run flake8 .
@@ -104,7 +94,6 @@ jobs:
           key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
       
       - name: Install Poetry
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         uses: snok/install-poetry@v1
         with:
           virtualenvs-create: true
