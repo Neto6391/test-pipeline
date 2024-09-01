@@ -21,7 +21,8 @@ jobs:
       uses: actions/cache@v4
       with:
           path: ~/.local
-          key: ${{ runner.os }}-poetry-0
+          key: ${{ runner.os }}-poetry
+          restore-keys: ${{ runner.os }}-poetry
     - run: pipx install poetry
 
     - name: cache deps
@@ -40,6 +41,11 @@ jobs:
     needs: setup
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+            path: ~/.local
+            key: ${{ runner.os }}-poetry
+            restore-keys: ${{ runner.os }}-poetry
       - name: Run linter
         run: poetry run flake8 .
 
@@ -48,7 +54,11 @@ jobs:
     needs: setup
     steps:
       - uses: actions/checkout@v4
-
+      - uses: actions/cache@v4
+        with:
+            path: ~/.local
+            key: ${{ runner.os }}-poetry
+            restore-keys: ${{ runner.os }}-poetry
       - name: Run tests
         run: poetry run pytest .
 
