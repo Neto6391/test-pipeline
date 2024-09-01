@@ -11,8 +11,6 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cached-poetry-dependencies.outputs.cache-hit }}
     steps:
     - uses: actions/checkout@v4
     
@@ -21,8 +19,8 @@ jobs:
       with:
         python-version: '3.10'
     
-    - name: Cache Poetry and Dependencies
-      id: cached-poetry-dependencies
+    - name: Load cached Poetry installation
+      id: poetry-cache
       uses: actions/cache@v4
       with:
         path: |
@@ -31,22 +29,24 @@ jobs:
           .venv
         key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
     
-    - name: Install Poetry and Dependencies
+    - name: Install Poetry
       run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        export PATH="$HOME/.local/bin:$PATH"
-        poetry install --no-interaction --no-root
+        if [ ! -f "$HOME/.poetry/bin/poetry" ]; then
+          curl -sSL https://install.python-poetry.org | python3 -
+        fi
     
-  lint-test:
-    runs-on: ubuntu-latest
+    - name: Install dependencies
+      if: steps.poetry-cache.outputs.cache-hit != 'true'
+      run: |
+        $HOME/.poetry/bin/poetry install --no-interaction --no-root
+
+  lint:
     needs: setup
-    strategy:
-      matrix:
-        task: [lint, test]
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-
-    - name: Restore Cache
+    
+    - name: Restore Poetry Cache
       uses: actions/cache@v4
       with:
         path: |
@@ -60,15 +60,38 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Run ${{ matrix.task }}
+    - name: Run linter
       run: |
-        export PATH="$HOME/.local/bin:$PATH"
-        poetry run ${{ matrix.task }} .
-  
+        $HOME/.poetry/bin/poetry run flake8 .
+
+  test:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Restore Poetry Cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/pypoetry
+          ~/.poetry
+          .venv
+        key: poetry-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Run tests
+      run: |
+        $HOME/.poetry/bin/poetry run pytest .
+
   deploy:
     runs-on: ubuntu-latest
-    needs: [lint-test]
-    if: needs.lint-test.result == 'success'
+    needs: [lint, test]
     steps:
     - name: Deploy
+      if: success()
       run: echo "Deploying the application..."
