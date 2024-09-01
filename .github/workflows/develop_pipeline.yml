@@ -31,36 +31,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-poetry-
 
-    - name: Install Poetry
-      run: |
-        if [ ! -d "$HOME/.poetry" ]; then
-          curl -sSL https://install.python-poetry.org | python3 -
-        fi
-        export PATH="$HOME/.local/bin:$PATH"
-        
-    - name: Install dependencies
-      run: |
-        poetry install --no-root
-
   lint:
     runs-on: ubuntu-latest
     needs: setup
     steps:
       - uses: actions/checkout@v4
-    
       - name: Restore Poetry from Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cache/pypoetry
             ~/.poetry
             .venv
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-  
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
           
       - name: Add Poetry to PATH
         run: export PATH="$HOME/.local/bin:$PATH"
@@ -73,7 +56,6 @@ jobs:
     needs: setup
     steps:
       - uses: actions/checkout@v4
-    
       - name: Restore Poetry from Cache
         uses: actions/cache@v4
         with:
@@ -82,14 +64,12 @@ jobs:
             ~/.poetry
             .venv
           key: ${{ runner.os }}-poetry-${{ hashFiles('**/poetry.lock') }}
-  
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-  
+          
       - name: Add Poetry to PATH
         run: export PATH="$HOME/.local/bin:$PATH"
+
+      - name: Run tests
+        run: poetry run pytest .
 
   deploy:
     runs-on: ubuntu-latest
