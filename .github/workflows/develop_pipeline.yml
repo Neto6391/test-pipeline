@@ -25,7 +25,7 @@ jobs:
       with:
         path: .venv
         key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
-    
+
     - name: Install Poetry and dependencies
       run: |
         if [ ! -d ".venv" ]; then
@@ -58,6 +58,11 @@ jobs:
       with:
         name: venv
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
     - name: Run linter
       run: .venv/bin/poetry run flake8 .
 
@@ -71,6 +76,11 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: venv
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
     - name: Run tests
       run: .venv/bin/poetry run pytest .
