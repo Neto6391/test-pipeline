@@ -44,7 +44,7 @@ jobs:
       - name: install depedencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-            pipx install poetry
+            
             poetry install --no-interaction --no-root
 
       - name: Run tests
@@ -55,6 +55,7 @@ jobs:
         if: steps.cached-poetry-dependencies.outputs.cache-hit == 'true'
         run: |
           source .venv/bin/activate
+          pipx install poetry
           poetry run flake8 .
           
 
