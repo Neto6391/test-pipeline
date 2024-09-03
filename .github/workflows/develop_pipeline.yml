@@ -44,14 +44,13 @@ jobs:
       - name: install depedencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-            python -m venv .venv
             source .venv/bin/activate
-            pipx install poetry
             poetry install --no-interaction --no-root
           
       - name: Run tests
         run: |
           source .venv/bin/activate
+          pipx install poetry
           poetry run flake8 .
 
   test:
