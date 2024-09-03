@@ -74,6 +74,7 @@ jobs:
       - name: Run tests
         run: |
           # poetry install --no-interaction
+          source .venv/bin/activate
           poetry run pytest .
 
   deploy:
