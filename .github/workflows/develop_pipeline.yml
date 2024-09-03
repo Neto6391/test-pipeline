@@ -26,10 +26,8 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            .venv
-            ~/.local/bin
-            ~/.local/lib
+          path: .venv
+
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
         
       - name: Install Poetry
@@ -70,10 +68,7 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          path: |
-            .venv
-            ~/.local/bin
-            ~/.local/lib
+          path: .venv
           key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
           
       - name: Install Poetry
