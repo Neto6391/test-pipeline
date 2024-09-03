@@ -41,7 +41,7 @@ jobs:
       
       - name: Run linter
         run: |
-          poetry install --no-interaction
+          # poetry install --no-interaction
           poetry run flake8 .
 
   test:
@@ -73,7 +73,7 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry install --no-interaction
+          # poetry install --no-interaction
           poetry run pytest .
 
   deploy:
