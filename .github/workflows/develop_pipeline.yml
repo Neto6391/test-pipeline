@@ -39,9 +39,17 @@ jobs:
           virtualenvs-path: .venv
           installer-parallel: true
       
-      - name: Run linter
+
+      - name: install depedencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          # poetry install --no-interaction
+            python -m venv .venv
+            source .venv/bin/activate
+            poetry install --no-interaction --no-root
+          
+      - name: Run tests
+        run: |
+          source .venv/bin/activate
           poetry run flake8 .
 
   test:
@@ -71,12 +79,17 @@ jobs:
           virtualenvs-path: .venv
           installer-parallel: true
 
+      - name: install depedencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          poetry install --no-interaction --no-root
+        
       - name: Run tests
         run: |
-          # poetry install --no-interaction
-          source .venv/bin/activate
-          poetry run pytest .
-
+            source .venv/bin/activate
+            poetry run pytest .
   deploy:
     runs-on: ubuntu-latest
     needs: [lint, test]
