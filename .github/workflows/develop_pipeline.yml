@@ -25,7 +25,9 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.local
+          path: |
+            ~/.local
+            .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
         
       - name: Install Poetry
@@ -38,10 +40,12 @@ jobs:
           virtualenvs-path: .venv
           installer-parallel: true
       
+      - name: install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
+
       - name: Run linter
-        run: |
-          poetry install --no-interaction
-          poetry run flake8 .
+        run: poetry run flake8 .
 
   test:
     runs-on: ubuntu-latest
@@ -57,7 +61,9 @@ jobs:
         id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
-          path: ~/.local
+          path: |
+            ~/.local
+            .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
           
       - name: Install Poetry
@@ -69,6 +75,10 @@ jobs:
           virtualenvs-in-project: true
           virtualenvs-path: .venv
           installer-parallel: true
+
+      - name: install dependencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction
 
       - name: Run tests
         run: |
