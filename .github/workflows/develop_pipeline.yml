@@ -15,26 +15,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache Poetry installation
-        id: cache-poetry
+      
+      - name: Load cached Poetry installation
+        id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
           path: |
+            .venv
             ~/.local/bin
             ~/.local/lib
-            ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
+        
       - name: Install Poetry
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         uses: snok/install-poetry@v1
         with:
           version: latest
@@ -42,46 +41,43 @@ jobs:
           virtualenvs-in-project: true
           virtualenvs-path: .venv
           installer-parallel: true
+      
 
-      - name: Cache dependencies
-        id: cache-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
-
-      - name: Install dependencies
+      - name: install depedencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          poetry install --no-interaction --no-root
-
-      - name: Run linter
+            python -m venv .venv
+            source .venv/bin/activate
+            pipx install poetry
+            poetry install --no-interaction --no-root
+          
+      - name: Run tests
         run: |
+          source .venv/bin/activate
           poetry run flake8 .
 
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-
-      - name: Cache Poetry installation
-        id: cache-poetry
+      
+      - name: Load cached Poetry installation
+        id: cached-poetry-dependencies
         uses: actions/cache@v4
         with:
           path: |
+            .venv
             ~/.local/bin
             ~/.local/lib
-            ~/.cache/pypoetry
-          key: poetry-${{ runner.os }}-${{ env.PYTHON_VERSION }}
-          restore-keys: |
-            poetry-${{ runner.os }}-
-
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
+          
       - name: Install Poetry
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         uses: snok/install-poetry@v1
         with:
           version: latest
@@ -90,26 +86,23 @@ jobs:
           virtualenvs-path: .venv
           installer-parallel: true
 
-      - name: Cache dependencies
-        id: cache-dependencies
-        uses: actions/cache@v4
-        with:
-          path: .venv
-          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/pyproject.toml') }}
-
-      - name: Install dependencies
+      - name: install depedencies
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: |
-          poetry install --no-interaction --no-root
-
+            python -m venv .venv
+            source .venv/bin/activate
+            pipx install poetry
+            poetry install --no-interaction --no-root
+        
       - name: Run tests
         run: |
-          poetry run pytest .
-
+            source .venv/bin/activate
+            poetry run pytest .
   deploy:
     runs-on: ubuntu-latest
     needs: [lint, test]
     steps:
-      - name: Deploy
-        if: success()
-        run: |
-          echo "Deploying the application..."
+    - name: Deploy
+      if: success()
+      run: |
+        echo "Deploying the application..."
